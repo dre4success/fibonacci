@@ -29,6 +29,36 @@ func generateToken() (string, error) {
 	return hex.EncodeToString(buff), nil
 }
 
+type FibonacciServer struct {
+	http.Handler
+}
+
+func allowCORS(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, X-Fib-Token")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next(w, r)
+	}
+}
+
+func NewFibonacciServer() *FibonacciServer {
+	s := new(FibonacciServer)
+
+	router := http.NewServeMux()
+	router.HandleFunc("/current", allowCORS(s.getCurrent))
+	router.HandleFunc("/next", allowCORS(s.getNext))
+	router.HandleFunc("/previous", allowCORS(s.getPrevious))
+
+	s.Handler = router
+	return s
+}
+
 func respondWithJSON(w http.ResponseWriter, statusCode int, token string, value int64) {
 	response := JsonResponse{Token: token, Value: value}
 	jsonEncoded, err := json.Marshal(response)
@@ -41,8 +71,9 @@ func respondWithJSON(w http.ResponseWriter, statusCode int, token string, value 
 	w.Write(jsonEncoded)
 }
 
-func GetCurrent(w http.ResponseWriter, r *http.Request) {
+func (s *FibonacciServer) getCurrent(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("X-Fib-Token")
+	log.Println("token", token)
 	if token == "" {
 		var err error
 		token, err = generateToken()
@@ -50,8 +81,7 @@ func GetCurrent(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to generate token", http.StatusInternalServerError)
 			return
 		}
-		log.Println("token: ", token)
-		states.Store(token, &FibonacciState{Previous: 0, Current: 1})
+		states.Store(token, &FibonacciState{Current: 0, Previous: 1})
 	}
 	stateInterface, ok := states.Load(token)
 	if !ok {
@@ -63,7 +93,7 @@ func GetCurrent(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, token, value.Current)
 }
 
-func GetNext(w http.ResponseWriter, r *http.Request) {
+func (s *FibonacciServer) getNext(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("X-Fib-Token")
 	if token == "" {
 		http.Error(w, "Token not provided", http.StatusBadRequest)
@@ -78,7 +108,7 @@ func GetNext(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, token, value.Current)
 }
 
-func GetPrevious(w http.ResponseWriter, r *http.Request) {
+func (s *FibonacciServer) getPrevious(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("X-Fib-Token")
 	if token == "" {
 		http.Error(w, "Token not provided", http.StatusBadRequest)
@@ -87,8 +117,8 @@ func GetPrevious(w http.ResponseWriter, r *http.Request) {
 	stateInterface, _ := states.Load(token)
 	// type checking the stateInterface that it is of FibonacciState type
 	value := stateInterface.(*FibonacciState)
-
 	if value.Current == 0 {
+
 		w.WriteHeader(http.StatusBadRequest)
 		response := map[string]string{
 			"message": "Can't go back any further in the sequence.",
@@ -97,9 +127,9 @@ func GetPrevious(w http.ResponseWriter, r *http.Request) {
 		w.Write(jsonResponse)
 		return
 	}
-	prevValue := value.Current - value.Previous
+	newPrevious := value.Current - value.Previous
 	value.Current = value.Previous
-	value.Previous = prevValue
+	value.Previous = newPrevious
 
 	respondWithJSON(w, http.StatusOK, token, value.Current)
 }

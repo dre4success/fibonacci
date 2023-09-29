@@ -1,15 +1,22 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/dre4success/fibonacci/fibonacci"
 )
 
-func main() {
-	http.HandleFunc("/current", fibonacci.GetCurrent)
-	http.HandleFunc("/next", fibonacci.GetNext)
-	http.HandleFunc("/previous", fibonacci.GetPrevious)
 
-	http.ListenAndServe(":8080", nil)
+func main() {
+	const Port = ":8080"
+
+	fibonacciServer := fibonacci.NewFibonacciServer()
+
+	http.Handle("/api/", http.StripPrefix("/api", fibonacciServer))
+
+	log.Println("server started on Port", Port)
+	if err := http.ListenAndServe(Port, nil); err != nil {
+		log.Fatalf("Server failed: %s", err)
+	}
 }
