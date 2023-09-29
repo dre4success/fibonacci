@@ -87,6 +87,16 @@ func GetPrevious(w http.ResponseWriter, r *http.Request) {
 	stateInterface, _ := states.Load(token)
 	// type checking the stateInterface that it is of FibonacciState type
 	value := stateInterface.(*FibonacciState)
+
+	if value.Current == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		response := map[string]string{
+			"message": "Can't go back any further in the sequence.",
+		}
+		jsonResponse, _ := json.Marshal(response)
+		w.Write(jsonResponse)
+		return
+	}
 	prevValue := value.Current - value.Previous
 	value.Current = value.Previous
 	value.Previous = prevValue
