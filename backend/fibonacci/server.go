@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"log"
 	"net/http"
 	"sync"
 )
@@ -73,7 +72,6 @@ func respondWithJSON(w http.ResponseWriter, statusCode int, token string, value 
 
 func (s *FibonacciServer) getCurrent(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("X-Fib-Token")
-	log.Println("token", token)
 	if token == "" {
 		var err error
 		token, err = generateToken()

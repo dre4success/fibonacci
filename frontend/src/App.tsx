@@ -5,12 +5,10 @@ const baseUrl = "http://localhost:8080/api";
 
 function App() {
   const [current, setCurrent] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(false);
   const [tokenHeader, setTokenHeader] = useState<string>("");
   const [error, setError] = useState<string>("");
 
   const fetchCurrent = async (token: string) => {
-    setLoading(true);
     try {
       const response = await fetch(`${baseUrl}/current`, {
         headers: {
@@ -24,13 +22,10 @@ function App() {
       setCurrent(data.value);
     } catch (error) {
       console.error(error);
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchNext = async (token: string) => {
-    setLoading(true);
     try {
       const response = await fetch(`${baseUrl}/next`, {
         headers: { "X-Fib-Token": token, "Content-Type": "application/json" },
@@ -39,13 +34,10 @@ function App() {
       setCurrent(data.value);
     } catch (error) {
       console.error(error);
-    } finally {
-      setLoading(false);
     }
   };
 
   const fetchPrevious = async (token: string) => {
-    setLoading(true);
     try {
       const response = await fetch(`${baseUrl}/previous`, {
         headers: { "X-Fib-Token": token, "Content-Type": "application/json" },
@@ -59,8 +51,6 @@ function App() {
     } catch (error: any) {
       setError(error?.message);
       console.error(error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -68,16 +58,11 @@ function App() {
     fetchCurrent(tokenHeader);
   }, []);
 
-
   return (
     <div className="App">
       <header className="App-header">
         <h1>Fibonacci Value</h1>
-        {loading ? (
-          <div className="loader" />
-        ) : (
-          <p>{error ? error : current}</p>
-        )}
+        <p>{error ? error : current}</p>
         <div>
           {error ? (
             <button onClick={() => fetchCurrent(tokenHeader)}>Current</button>
