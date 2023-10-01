@@ -16,3 +16,6 @@ phases:
       - echo Pushing the Docker image...
       - docker push 428687659842.dkr.ecr.eu-west-1.amazonaws.com/fibonacci-sequence:latest
       - echo Docker image pushed successfully
+artifacts:
+  files:
+    - '**/*'
