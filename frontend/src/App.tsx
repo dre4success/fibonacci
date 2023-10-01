@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 
-const baseUrl = "http://localhost:8080/api";
+const baseUrl = process.env.REACT_APP_BASE_URL;
 
 function App() {
   const [current, setCurrent] = useState<number>(0);
